@@ -337,6 +337,17 @@ extern "C" int v_difftest_step();
     DPIC_ARG_BYTE storeMask              \
   )
 
+// v_difftest_XEvent
+#define INTERFACE_X_EVENT                \
+  DIFFTEST_DPIC_FUNC_DECL(XEvent) (      \
+    DPIC_ARG_BYTE coreid,                \
+    DPIC_ARG_BYTE index,                 \
+    DPIC_ARG_BIT  valid,                 \
+    DPIC_ARG_LONG storeAddr,             \
+    DPIC_ARG_LONG storeData,             \
+    DPIC_ARG_BYTE storeMask              \
+  )
+
 // v_difftest_LoadEvent
 #define INTERFACE_LOAD_EVENT             \
   DIFFTEST_DPIC_FUNC_DECL(LoadEvent) (   \
@@ -466,6 +477,7 @@ INTERFACE_FP_WRITEBACK;
 INTERFACE_FP_REG_STATE;
 INTERFACE_SBUFFER_EVENT;
 INTERFACE_STORE_EVENT;
+INTERFACE_X_EVENT;
 INTERFACE_LOAD_EVENT;
 INTERFACE_ATOMIC_EVENT;
 INTERFACE_L1TLB_EVENT;

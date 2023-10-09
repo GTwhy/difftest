@@ -144,6 +144,13 @@ class DiffStoreEventIO extends DifftestBundle with DifftestWithIndex {
   val storeMask   = Input(UInt(8.W))
 }
 
+class DiffXEventIO extends DifftestBundle with DifftestWithIndex {
+  val valid       = Input(Bool())
+  val storeAddr   = Input(UInt(64.W))
+  val storeData   = Input(UInt(64.W))
+  val storeMask   = Input(UInt(8.W))
+}
+
 class DiffLoadEventIO extends DifftestBundle with DifftestWithIndex {
   val valid  = Input(Bool())
   val paddr  = Input(UInt(64.W))
@@ -304,6 +311,7 @@ class DifftestArchIntRegState extends DifftestBaseModule(new DiffArchIntRegState
 class DifftestArchFpRegState extends DifftestBaseModule(new DiffArchFpRegStateIO)
 class DifftestSbufferEvent extends DifftestBaseModule(new DiffSbufferEventIO)
 class DifftestStoreEvent extends DifftestBaseModule(new DiffStoreEventIO)
+class DifftestXEvent extends DifftestBaseModule(new DiffXEventIO)
 class DifftestLoadEvent extends DifftestBaseModule(new DiffLoadEventIO)
 class DifftestAtomicEvent extends DifftestBaseModule(new DiffAtomicEventIO)
 class DifftestL1TLBEvent extends DifftestBaseModule(new DiffL1TLBEventIO)

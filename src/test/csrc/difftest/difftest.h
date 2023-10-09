@@ -139,6 +139,13 @@ typedef struct {
 
 typedef struct {
   uint8_t  valid = 0;
+  uint64_t addr;
+  uint64_t data;
+  uint8_t  mask;
+} x_event_t;
+
+typedef struct {
+  uint8_t  valid = 0;
   uint64_t paddr;
   uint8_t  fuType;
   uint8_t  opType;
@@ -224,6 +231,7 @@ typedef struct {
   debug_mode_t      dmregs;
   sbuffer_state_t   sbuffer[DIFFTEST_SBUFFER_RESP_WIDTH];
   store_event_t     store[DIFFTEST_STORE_WIDTH];
+  x_event_t         x[DIFFTEST_STORE_WIDTH];
   load_event_t      load[DIFFTEST_COMMIT_WIDTH];
   atomic_event_t    atomic;
   l1tlb_event_t     itlb[DIFFTEST_ITLB_WIDTH];
@@ -345,6 +353,9 @@ public:
   }
   inline store_event_t *get_store_event(uint8_t index) {
     return &(dut.store[index]);
+  }
+  inline x_event_t *get_x_event(uint8_t index) {
+    return &(dut.x[index]);
   }
   inline load_event_t *get_load_event(uint8_t index) {
     return &(dut.load[index]);

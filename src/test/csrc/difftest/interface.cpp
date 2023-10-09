@@ -15,6 +15,7 @@
 ***************************************************************************************/
 
 #include "interface.h"
+#include "tools.h"
 
 extern "C" int v_difftest_init() {
   return difftest_init();
@@ -298,6 +299,30 @@ INTERFACE_STORE_EVENT {
     packet->addr = storeAddr;
     packet->data = storeData;
     packet->mask = storeMask;
+  }
+}
+
+uint64_t sim_clock = 0;
+
+INTERFACE_X_EVENT {
+  RETURN_NO_NULL
+  auto packet = difftest[coreid]->get_x_event(index);
+  packet->valid = valid;
+  sim_clock++;
+  if (packet->valid) {
+    packet->addr = storeAddr;
+    packet->data = storeData;
+    packet->mask = storeMask;
+    // TODO:add self define func at here
+    printf("get_x_event: coreid=%u, addr=%lu, data=%lu, mask=%u, clock=%lu\n",\
+      coreid, storeAddr, storeData, storeMask, sim_clock);
+    Event event;
+    event.ty = EventType::StoreCommit;
+    event.core_id = (uint32_t)coreid;
+    event.addr = storeAddr;
+    event.value = storeData;
+    event.time = sim_clock;
+    send_event_to_fifo(event);
   }
 }
 
