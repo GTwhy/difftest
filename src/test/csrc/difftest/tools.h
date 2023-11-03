@@ -45,6 +45,10 @@ struct Event {
     bool operator!=(const Event& other) const {
         return !(*this == other);
     }
+
+    // New constructor to make it easier to create events
+    Event(EventType ty, uint32_t core_id, uint64_t addr, uint64_t value, uint64_t time)
+        : ty(ty), core_id(core_id), addr(addr), value(value), time(time) {}
 };
 
 // The following is just to provide the equivalent of Rust's Debug trait
@@ -52,7 +56,13 @@ inline std::ostream& operator<<(std::ostream& os, const EventType& eventType) {
     switch (eventType) {
         case EventType::Invalid: os << "Invalid"; break;
         case EventType::LoadCommit: os << "LoadCommit"; break;
-        // ... add the other cases here
+        case EventType::LoadComplete: os << "LoadComplete"; break;
+        case EventType::LoadSquash: os << "LoadSquash"; break;
+        case EventType::StoreAvailable: os << "StoreAvailable"; break;
+        case EventType::StoreCommit: os << "StoreCommit"; break;
+        case EventType::StoreComplete: os << "StoreComplete"; break;
+        case EventType::StoreSquash: os << "StoreSquash"; break;
+        case EventType::StoreRemoteCommit: os << "StoreRemoteCommit"; break;
         case EventType::StoreRemoteComplete: os << "StoreRemoteComplete"; break;
         default: os << "Unknown EventType";
     }

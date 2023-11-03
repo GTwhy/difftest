@@ -67,6 +67,7 @@ class DiffInstrCommitIO extends DiffBasicInstrCommitIO {
   val sqIdx    = Input(UInt(7.W))
   val isLoad   = Input(Bool())
   val isStore  = Input(Bool())
+  val cycleCnt = Input(UInt(64.W))
 }
 
 class DiffBasicTrapEventIO extends DifftestBundle {
@@ -135,6 +136,7 @@ class DiffSbufferEventIO extends DifftestBundle with DifftestWithIndex{
   val sbufferAddr = Input(UInt(64.W))
   val sbufferData = Input(Vec(64, UInt(8.W)))
   val sbufferMask = Input(UInt(64.W))
+  val cycleCnt = Input(UInt(64.W))
 }
 
 class DiffStoreEventIO extends DifftestBundle with DifftestWithIndex {
@@ -142,6 +144,15 @@ class DiffStoreEventIO extends DifftestBundle with DifftestWithIndex {
   val storeAddr   = Input(UInt(64.W))
   val storeData   = Input(UInt(64.W))
   val storeMask   = Input(UInt(8.W))
+  val cycleCnt    = Input(UInt(64.W))
+}
+
+class DifftestLoadCompleteEventIO extends DifftestBundle with DifftestWithIndex {
+  val valid  = Input(Bool())
+  val paddr  = Input(UInt(64.W))
+  val loadData   = Input(UInt(64.W))
+  val loadMask   = Input(UInt(8.W))
+  val cycleCnt = Input(UInt(64.W))
 }
 
 class DiffXEventIO extends DifftestBundle with DifftestWithIndex {
@@ -156,6 +167,7 @@ class DiffLoadEventIO extends DifftestBundle with DifftestWithIndex {
   val paddr  = Input(UInt(64.W))
   val opType = Input(UInt(8.W))
   val fuType = Input(UInt(8.W))
+  val cycleCnt = Input(UInt(64.W))
 }
 
 class DiffAtomicEventIO extends DifftestBundle {
@@ -311,6 +323,7 @@ class DifftestArchIntRegState extends DifftestBaseModule(new DiffArchIntRegState
 class DifftestArchFpRegState extends DifftestBaseModule(new DiffArchFpRegStateIO)
 class DifftestSbufferEvent extends DifftestBaseModule(new DiffSbufferEventIO)
 class DifftestStoreEvent extends DifftestBaseModule(new DiffStoreEventIO)
+class DifftestLoadCompleteEvent extends DifftestBaseModule(new DifftestLoadCompleteEventIO)
 class DifftestXEvent extends DifftestBaseModule(new DiffXEventIO)
 class DifftestLoadEvent extends DifftestBaseModule(new DiffLoadEventIO)
 class DifftestAtomicEvent extends DifftestBaseModule(new DiffAtomicEventIO)

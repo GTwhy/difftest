@@ -288,6 +288,13 @@ INTERFACE_SBUFFER_EVENT {
     packet->data[62] = sbufferData_62;
     packet->data[63] = sbufferData_63;
     packet->mask = sbufferMask;
+    for (int i = 0; i < 64; i++) {
+      if(sbufferMask && (1 << i) ) {
+        // TODO: convert sbuffer event into store complete events
+        Event event(EventType::StoreComplete, coreid, sbufferAddr, packet->data[i], cycleCnt);
+        send_event_to_fifo(event);
+      }
+    }
   }
 }
 
@@ -299,30 +306,23 @@ INTERFACE_STORE_EVENT {
     packet->addr = storeAddr;
     packet->data = storeData;
     packet->mask = storeMask;
+    packet->cycleCnt = cycleCnt;
+    Event event(EventType::StoreAvailable, coreid, storeAddr, storeData, cycleCnt);
+    send_event_to_fifo(event);
   }
 }
-
-uint64_t sim_clock = 0;
 
 INTERFACE_X_EVENT {
   RETURN_NO_NULL
   auto packet = difftest[coreid]->get_x_event(index);
   packet->valid = valid;
-  sim_clock++;
   if (packet->valid) {
     packet->addr = storeAddr;
     packet->data = storeData;
     packet->mask = storeMask;
     // TODO:add self define func at here
-    printf("get_x_event: coreid=%u, addr=%lu, data=%lu, mask=%u, clock=%lu\n",\
-      coreid, storeAddr, storeData, storeMask, sim_clock);
-    Event event;
-    event.ty = EventType::StoreCommit;
-    event.core_id = (uint32_t)coreid;
-    event.addr = storeAddr;
-    event.value = storeData;
-    event.time = sim_clock;
-    send_event_to_fifo(event);
+    // Event event(EventType::StoreCommit, coreid, storeAddr, storeData, cycleCnt);
+    // send_event_to_fifo(event);
   }
 }
 
@@ -334,6 +334,70 @@ INTERFACE_LOAD_EVENT {
     packet->paddr = paddr;
     packet->opType = opType;
     packet->fuType = fuType;
+    // TODO: deal with amo
+    if (fuType == 0xF) {
+      printf("ERROR: AMO detected!\n");
+    }
+
+        // normal load
+    // Note: bit(1, 0) are size, DO NOT CHANGE
+    // bit encoding: | load 0 | is unsigned(1bit) | size(2bit) |
+    // def lb       = "b0000".U
+    // def lh       = "b0001".U
+    // def lw       = "b0010".U
+    // def ld       = "b0011".U
+    // def lbu      = "b0100".U
+    // def lhu      = "b0101".U
+    // def lwu      = "b0110".U
+
+    // normal store
+    // bit encoding: | store 00 | size(2bit) |
+    // def sb       = "b0000".U
+    // def sh       = "b0001".U
+    // def sw       = "b0010".U
+    // def sd       = "b0011".U
+
+    // load or Store
+    if (fuType == 0xC || fuType == 0xD) {
+    int len = 0;
+      switch (opType) {
+        case 0: len = 1; break;
+        case 1: len = 2; break;
+        case 2: len = 4; break;
+        case 3: len = 8; break;
+        case 4: len = 1; break;
+        case 5: len = 2; break;
+        case 6: len = 4; break;
+        default:
+          printf("Unknown fuOpType: 0x%x\n", opType);
+      }
+
+      uint64_t data = difftest[coreid]->get_commit_data(coreid);
+      switch (opType) {
+        case 0: data = (int64_t)(int8_t)data; break;
+        case 1: data = (int64_t)(int16_t)data; break;
+        case 2: data = (int64_t)(int32_t)data; break;
+      }
+
+      // store with wrong optype
+      if (fuType == 0xD && opType > 3) {
+        printf("ERROR: Store with wrong optype detected!\n");
+      }
+      Event event(EventType::Invalid, coreid, paddr, data, cycleCnt);
+
+      // load
+      if (fuType == 0xC) {
+        event.ty = EventType::LoadCommit;
+      }
+
+      // store
+      if (fuType == 0xD) {
+        event.ty = EventType::StoreCommit;
+      }
+
+      send_event_to_fifo(event);
+    }
+    
   }
 }
 
@@ -347,6 +411,7 @@ INTERFACE_ATOMIC_EVENT {
     packet->mask = mask;
     packet->fuop = fuop;
     packet->out  = out;
+
   }
 }
 

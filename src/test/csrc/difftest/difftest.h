@@ -80,6 +80,7 @@ typedef struct {
   uint16_t robidx;
   uint8_t  isLoad;
   uint8_t  isStore;
+  uint64_t cycleCnt = 0;
 } instr_commit_t;
 
 typedef struct {
@@ -128,6 +129,7 @@ typedef struct {
   uint64_t addr;
   uint8_t  data[64];
   uint64_t mask;
+  uint64_t cycleCnt = 0;
 } sbuffer_state_t;
 
 typedef struct {
@@ -135,6 +137,7 @@ typedef struct {
   uint64_t addr;
   uint64_t data;
   uint8_t  mask;
+  uint64_t cycleCnt;
 } store_event_t;
 
 typedef struct {
@@ -149,6 +152,7 @@ typedef struct {
   uint64_t paddr;
   uint8_t  fuType;
   uint8_t  opType;
+  uint64_t cycleCnt = 0;
 } load_event_t;
 
 typedef struct {
@@ -416,6 +420,11 @@ public:
   }
 #endif
 
+  inline uint64_t get_commit_data(int i) {
+    uint64_t result = (dut.commit[i].fpwen) ? dut.pregs.fpr[dut.commit[i].wpdest] : dut.pregs.gpr[dut.commit[i].wpdest];
+    return result;
+  }
+
 protected:
   const uint64_t firstCommit_limit = 15000;
   const uint64_t stuck_limit = 15000;
@@ -455,10 +464,7 @@ protected:
   int do_golden_memory_update();
   // inline uint64_t *ref_regs_ptr() { return (uint64_t*)&ref.regs; }
   // inline uint64_t *dut_regs_ptr() { return (uint64_t*)&dut.regs; }
-  inline uint64_t get_commit_data(int i) {
-    uint64_t result = (dut.commit[i].fpwen) ? dut.pregs.fpr[dut.commit[i].wpdest] : dut.pregs.gpr[dut.commit[i].wpdest];
-    return result;
-  }
+
   inline bool has_wfi() {
     return dut.trap.hasWFI;
   }

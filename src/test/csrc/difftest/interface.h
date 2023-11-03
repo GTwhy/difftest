@@ -98,7 +98,8 @@ extern "C" int v_difftest_step();
     DPIC_ARG_BYTE lqidx,                 \
     DPIC_ARG_BYTE sqidx,                 \
     DPIC_ARG_BIT  isLoad,                \
-    DPIC_ARG_BIT  isStore                \
+    DPIC_ARG_BIT  isStore,               \
+    DPIC_ARG_LONG cycleCnt               \
   )
 
 // v_difftest_BasicTrapEvent
@@ -323,7 +324,8 @@ extern "C" int v_difftest_step();
     DPIC_ARG_BYTE sbufferData_61,        \
     DPIC_ARG_BYTE sbufferData_62,        \
     DPIC_ARG_BYTE sbufferData_63,        \
-    DPIC_ARG_LONG sbufferMask            \
+    DPIC_ARG_LONG sbufferMask,           \
+    DPIC_ARG_LONG cycleCnt               \
   )
 
 // v_difftest_StoreEvent
@@ -334,7 +336,8 @@ extern "C" int v_difftest_step();
     DPIC_ARG_BIT  valid,                 \
     DPIC_ARG_LONG storeAddr,             \
     DPIC_ARG_LONG storeData,             \
-    DPIC_ARG_BYTE storeMask              \
+    DPIC_ARG_BYTE storeMask,             \
+    DPIC_ARG_LONG cycleCnt               \
   )
 
 // v_difftest_XEvent
@@ -356,7 +359,8 @@ extern "C" int v_difftest_step();
     DPIC_ARG_BIT  valid,                 \
     DPIC_ARG_LONG paddr,                 \
     DPIC_ARG_BYTE opType,                \
-    DPIC_ARG_BYTE fuType                 \
+    DPIC_ARG_BYTE fuType,                \
+    DPIC_ARG_LONG cycleCnt               \
   )
 
 // v_difftest_AtomicEvent
