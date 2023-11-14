@@ -147,7 +147,7 @@ class DiffStoreEventIO extends DifftestBundle with DifftestWithIndex {
   val cycleCnt    = Input(UInt(64.W))
 }
 
-class DifftestLoadCompleteEventIO extends DifftestBundle with DifftestWithIndex {
+class DifftestLoadLocalEventIO extends DifftestBundle with DifftestWithIndex {
   val valid  = Input(Bool())
   val paddr  = Input(UInt(64.W))
   val loadData   = Input(UInt(64.W))
@@ -323,7 +323,7 @@ class DifftestArchIntRegState extends DifftestBaseModule(new DiffArchIntRegState
 class DifftestArchFpRegState extends DifftestBaseModule(new DiffArchFpRegStateIO)
 class DifftestSbufferEvent extends DifftestBaseModule(new DiffSbufferEventIO)
 class DifftestStoreEvent extends DifftestBaseModule(new DiffStoreEventIO)
-class DifftestLoadCompleteEvent extends DifftestBaseModule(new DifftestLoadCompleteEventIO)
+class DifftestLoadLocalEvent extends DifftestBaseModule(new DifftestLoadLocalEventIO)
 class DifftestXEvent extends DifftestBaseModule(new DiffXEventIO)
 class DifftestLoadEvent extends DifftestBaseModule(new DiffLoadEventIO)
 class DifftestAtomicEvent extends DifftestBaseModule(new DiffAtomicEventIO)

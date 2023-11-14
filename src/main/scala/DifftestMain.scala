@@ -36,6 +36,7 @@ class DifftestTop extends Module {
     var difftest_sbuffer_event = Module(new DifftestSbufferEvent);
     var difftest_store_event = Module(new DifftestStoreEvent);
     var difftest_x_event = Module(new DifftestXEvent);
+    var difftest_loadlocal_event = Module(new DifftestLoadLocalEvent);
     var difftest_load_event = Module(new DifftestLoadEvent);
     var difftest_atomic_event = Module(new DifftestAtomicEvent);
     var difftest_itlb_event = Module(new DifftestL1TLBEvent);

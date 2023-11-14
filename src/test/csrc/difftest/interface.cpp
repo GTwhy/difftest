@@ -91,6 +91,7 @@ INTERFACE_INSTR_COMMIT {
     packet->robidx   = robidx;
     packet->isLoad   = isLoad;
     packet->isStore  = isStore;
+    printf("[DUT] inst commit pc: %016lx, inst: %016lx, skip: %d, isRVC: %d, fused: %d, rfwen: %d, fpwen: %d, wpdest: %d, wdest: %d, sqidx: %d, lqidx: %d, robidx: %d, isLoad: %d, isStore: %d\n", packet->pc, packet->inst, packet->skip, packet->isRVC, packet->fused, packet->rfwen, packet->fpwen, packet->wpdest, packet->wdest, packet->sqidx, packet->lqidx, packet->robidx, packet->isLoad, packet->isStore);
   }
 }
 
@@ -132,6 +133,7 @@ INTERFACE_INT_WRITEBACK {
   auto packet = difftest[coreid]->get_physical_reg_state();
   if (valid) {
     packet->gpr[dest] = data;
+    printf("[DUT] writeback gpr[%d] = %016lx\n", dest, data);
   }
 }
 
@@ -177,6 +179,7 @@ INTERFACE_FP_WRITEBACK {
   auto packet = difftest[coreid]->get_physical_reg_state();
   if (valid) {
     packet->fpr[dest] = data;
+    printf("[DUT] fpr[%d] = %016lx\n", dest, data);
   }
 }
 
@@ -288,10 +291,12 @@ INTERFACE_SBUFFER_EVENT {
     packet->data[62] = sbufferData_62;
     packet->data[63] = sbufferData_63;
     packet->mask = sbufferMask;
+    // printf("sbufferMask: %lx\n", sbufferMask);
+
     for (int i = 0; i < 64; i++) {
-      if(sbufferMask && (1 << i) ) {
-        // TODO: convert sbuffer event into store complete events
-        Event event(EventType::StoreComplete, coreid, sbufferAddr, packet->data[i], cycleCnt);
+      // printf("sbufferMask & (1 << %d): %lx addr = %ld data = %d \n", i, sbufferMask & (1 << i), sbufferAddr+i, packet->data[i]);
+      if(sbufferMask & (1 << i) ) {
+        Event event(EventType::StoreGlobal, coreid, sbufferAddr+i, packet->data[i], cycleCnt);
         send_event_to_fifo(event);
       }
     }
@@ -307,8 +312,17 @@ INTERFACE_STORE_EVENT {
     packet->data = storeData;
     packet->mask = storeMask;
     packet->cycleCnt = cycleCnt;
-    Event event(EventType::StoreAvailable, coreid, storeAddr, storeData, cycleCnt);
-    send_event_to_fifo(event);
+    
+    // get byte one by one and send to fifo
+    // printf("storeMask: %x\n", storeMask);
+    for (int i = 0; i < 8; i++) {
+      // printf("storeMask & (1 << %d): %x addr = %ld data = %lu \n", i, storeMask & (1 << i), storeAddr+i, (storeData >> (i * 8)) & 0xFF);   
+      if(storeMask & (1 << i) ) {
+        uint8_t data = (storeData >> (i * 8)) & 0xFF;
+        Event event(EventType::StoreLocal, coreid, storeAddr + i, data, cycleCnt);
+        send_event_to_fifo(event);
+      }
+    } 
   }
 }
 
@@ -326,6 +340,17 @@ INTERFACE_X_EVENT {
   }
 }
 
+INTERFACE_LOADLOCAL_EVENT {
+  RETURN_NO_NULL
+  if (valid) {
+    for (int i = 0; i < loadMask; i++) {
+      uint8_t data = (loadData >> (i * 8)) & 0xFF;
+      Event event(EventType::LoadLocal, coreid, paddr+i, data, cycleCnt);
+      send_event_to_fifo(event);
+    }
+  }
+}
+
 INTERFACE_LOAD_EVENT {
   RETURN_NO_NULL
   auto packet = difftest[coreid]->get_load_event(index);
@@ -334,12 +359,13 @@ INTERFACE_LOAD_EVENT {
     packet->paddr = paddr;
     packet->opType = opType;
     packet->fuType = fuType;
+
     // TODO: deal with amo
     if (fuType == 0xF) {
       printf("ERROR: AMO detected!\n");
     }
 
-        // normal load
+    // normal load
     // Note: bit(1, 0) are size, DO NOT CHANGE
     // bit encoding: | load 0 | is unsigned(1bit) | size(2bit) |
     // def lb       = "b0000".U
@@ -359,7 +385,7 @@ INTERFACE_LOAD_EVENT {
 
     // load or Store
     if (fuType == 0xC || fuType == 0xD) {
-    int len = 0;
+      int len = 0;
       switch (opType) {
         case 0: len = 1; break;
         case 1: len = 2; break;
@@ -373,6 +399,7 @@ INTERFACE_LOAD_EVENT {
       }
 
       uint64_t data = difftest[coreid]->get_commit_data(coreid);
+      printf("load or store paddr: %016lx, data: %016lx\n", paddr, data);
       switch (opType) {
         case 0: data = (int64_t)(int8_t)data; break;
         case 1: data = (int64_t)(int16_t)data; break;
@@ -383,19 +410,25 @@ INTERFACE_LOAD_EVENT {
       if (fuType == 0xD && opType > 3) {
         printf("ERROR: Store with wrong optype detected!\n");
       }
-      Event event(EventType::Invalid, coreid, paddr, data, cycleCnt);
+
+      EventType ty = EventType::Invalid;
 
       // load
       if (fuType == 0xC) {
-        event.ty = EventType::LoadCommit;
+        ty = EventType::LoadCommit;
       }
 
       // store
       if (fuType == 0xD) {
-        event.ty = EventType::StoreCommit;
+        ty = EventType::StoreCommit;
       }
 
-      send_event_to_fifo(event);
+      for (int i = 0; i < len; i++) {
+        uint8_t data_i = (data >> (i * 8)) & 0xFF;
+        Event event(ty, coreid, paddr + i, data_i, cycleCnt);
+        send_event_to_fifo(event);
+      }
+
     }
     
   }
@@ -411,7 +444,8 @@ INTERFACE_ATOMIC_EVENT {
     packet->mask = mask;
     packet->fuop = fuop;
     packet->out  = out;
-
+    // TODO: deal with amo
+    printf("amo addr: %lx data: %lx mask: %hhx fuop: %hhx out: %lx\n", addr, data, mask, fuop, out);
   }
 }
 
@@ -446,15 +480,25 @@ INTERFACE_REFILL_EVENT {
   auto packet = difftest[coreid]->get_refill_event(cacheid);
   packet->valid = valid;
   if (packet->valid) {
-   packet->addr = addr;
-   packet->data[0] = data_0;
-   packet->data[1] = data_1;
-   packet->data[2] = data_2;
-   packet->data[3] = data_3;
-   packet->data[4] = data_4;
-   packet->data[5] = data_5;
-   packet->data[6] = data_6;
-   packet->data[7] = data_7;
+    packet->addr = addr;
+    packet->data[0] = data_0;
+    packet->data[1] = data_1;
+    packet->data[2] = data_2;
+    packet->data[3] = data_3;
+    packet->data[4] = data_4;
+    packet->data[5] = data_5;
+    packet->data[6] = data_6;
+    packet->data[7] = data_7;
+    printf("cacheid: %d\n", cacheid);
+    for (int i = 0; i < 64; i++) {
+        uint8_t data = (packet->data[i/8]) >> (i % 8) & 0xFF;
+        // TODO: fix cycleCnt
+        Event event(EventType::LoadGlobal, coreid, addr + i, data, 0);
+        send_event_to_fifo(event);
+        // // TODO: repalce with real loadlocal data
+        // event.ty = EventType::LoadLocal;
+        // send_event_to_fifo(event);
+    }
   }
 }
 
@@ -464,6 +508,8 @@ INTERFACE_LR_SC_EVENT {
   if (!packet->valid && valid) {
     packet->valid = valid;
     packet->success = success;
+    // TODO: deal with lrsc
+    printf("lrsc: %d\n", success);
   }
 }
 

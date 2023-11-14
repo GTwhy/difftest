@@ -2,14 +2,13 @@
 
 int fifo_handle = -1;
 
-int init_fifo(const char* fifo_path) {
+int init_fifo_handle(const char* fifo_path) {
     // delete fifo if exists
     if (access(fifo_path, F_OK) == 0) {
         unlink(fifo_path);
     }
 
     mkfifo(fifo_path, 0666);
-
     fifo_handle = open(fifo_path, O_WRONLY);
     if (fifo_handle < 0) {
         printf("open fifo failed %d \n", fifo_handle);
@@ -18,16 +17,11 @@ int init_fifo(const char* fifo_path) {
 
     return fifo_handle;
 }
-
-int init_fifo_handle() {
-    fifo_handle = init_fifo(FIFO_PATH);
-    return fifo_handle;
-}
-
 int send_event_to_fifo(Event event) {
     if (fifo_handle == -1) {
-      init_fifo_handle();
+      init_fifo_handle(FIFO_PATH);
     }
+    std::cout << "[DUT] " << event << std::endl;
     int res = write(fifo_handle, &event, sizeof(event));
     if (res < 0) {
         printf("write fifo failed %d\n", res);
