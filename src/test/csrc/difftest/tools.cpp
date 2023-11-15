@@ -1,6 +1,9 @@
 #include "tools.h"
+#include <queue>
 
 int fifo_handle = -1;
+
+std::queue<Event> event_buf;
 
 int init_fifo_handle(const char* fifo_path) {
     // delete fifo if exists
@@ -17,16 +20,27 @@ int init_fifo_handle(const char* fifo_path) {
 
     return fifo_handle;
 }
-int send_event_to_fifo(Event event) {
-    if (fifo_handle == -1) {
-      init_fifo_handle(FIFO_PATH);
+
+int init_fifo() {
+    return init_fifo_handle(FIFO_PATH);
+}
+
+
+void put_event_in_buf(Event event) {
+    event_buf.push(event);
+}
+
+int send_event_to_fifo() {
+    while (!event_buf.empty()) {
+        Event event = event_buf.front();
+        int res = write(fifo_handle, &event, sizeof(event));
+        if (res < 0) {
+            printf("write fifo failed %d\n", res);
+            return res;
+        };
+        std::cout << "[DUT] " << event << std::endl;
+        event_buf.pop();
     }
-    std::cout << "[DUT] " << event << std::endl;
-    int res = write(fifo_handle, &event, sizeof(event));
-    if (res < 0) {
-        printf("write fifo failed %d\n", res);
-        return res;
-    };
     return 0;
 }
 

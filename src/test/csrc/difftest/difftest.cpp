@@ -20,6 +20,7 @@
 #include "flash.h"
 #include "spikedasm.h"
 #include "ref.h"
+#include "tools.h"
 
 static const char *reg_name[DIFFTEST_NR_REG+1] = {
   "$0",  "ra",  "sp",   "gp",   "tp",  "t0",  "t1",   "t2",
@@ -48,6 +49,7 @@ int difftest_init() {
   for (int i = 0; i < NUM_CORES; i++) {
     difftest[i] = new Difftest(i);
   }
+  init_fifo();
   return 0;
 }
 
@@ -67,15 +69,91 @@ int difftest_state() {
   return -1;
 }
 
+void make_ldst_events(int core_id){
+  for (int i = 0; i < DIFFTEST_COMMIT_WIDTH; i++) {
+    load_event_t *mem_event = difftest[core_id]->get_load_event(i);
+    if (mem_event->valid == 0) {
+      continue;
+    }
+
+    // noarmal load
+    // Note: bit(1, 0) are size, DO NOT CHANGE
+    // bit encoding: | load 0 | is unsigned(1bit) | size(2bit) |
+    // def lb       = "b0000".U
+    // def lh       = "b0001".U
+    // def lw       = "b0010".U
+    // def ld       = "b0011".U
+    // def lbu      = "b0100".U
+    // def lhu      = "b0101".U
+    // def lwu      = "b0110".U
+
+    // normal store
+    // bit encoding: | store 00 | size(2bit) |
+    // def sb       = "b0000".U
+    // def sh       = "b0001".U
+    // def sw       = "b0010".U
+    // def sd       = "b0011".U
+
+    // load or Store
+    if (mem_event->fuType == 0xC || mem_event->fuType == 0xD) {
+      int len = 0;
+      switch (mem_event->opType) {
+        case 0: len = 1; break;
+        case 1: len = 2; break;
+        case 2: len = 4; break;
+        case 3: len = 8; break;
+        case 4: len = 1; break;
+        case 5: len = 2; break;
+        case 6: len = 4; break;
+        default:
+          printf("Unknown fuOpType: 0x%x\n", mem_event->opType);
+      }
+
+      uint64_t data = difftest[core_id]->get_commit_data(i);
+      // switch (opType) {
+      //   case 0: data = (int64_t)(int8_t)data; break;
+      //   case 1: data = (int64_t)(int16_t)data; break;
+      //   case 2: data = (int64_t)(int32_t)data; break;
+      // }
+
+      // store with wrong optype
+      if (mem_event->fuType == 0xD && mem_event->opType > 3) {
+        printf("ERROR: Store with wrong optype detected!\n");
+      }
+
+      EventType ty = EventType::Invalid;
+
+      // load
+      if (mem_event->fuType == 0xC) {
+        ty = EventType::LoadCommit;
+      }
+
+      // store
+      if (mem_event->fuType == 0xD) {
+        ty = EventType::StoreCommit;
+      }
+
+      for (int j = 0; j < len; j++) {
+        uint8_t data_byte = (data >> (j * 8)) & 0xFF;
+        Event event(ty, core_id, mem_event->paddr + j, data_byte, mem_event->cycleCnt);
+        put_event_in_buf(event);
+      }
+    }
+  }
+}
+
 int difftest_step() {
   for (int i = 0; i < NUM_CORES; i++) {
+    make_ldst_events(i);
     int ret = difftest[i]->step();
     if (ret) {
       return ret;
     }
   }
+  send_event_to_fifo();
   return 0;
 }
+
 
 Difftest::Difftest(int coreid) : id(coreid) {
   state = new DiffState();
