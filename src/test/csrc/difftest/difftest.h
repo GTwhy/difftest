@@ -152,6 +152,7 @@ typedef struct {
   uint64_t paddr;
   uint8_t  fuType;
   uint8_t  opType;
+  uint64_t x;
   uint64_t cycleCnt = 0;
 } load_event_t;
 
@@ -235,7 +236,7 @@ typedef struct {
   debug_mode_t      dmregs;
   sbuffer_state_t   sbuffer[DIFFTEST_SBUFFER_RESP_WIDTH];
   store_event_t     store[DIFFTEST_STORE_WIDTH];
-  x_event_t         x[DIFFTEST_STORE_WIDTH];
+  x_event_t         x[DIFFTEST_STORE_QUEUE_SIZE];
   load_event_t      load[DIFFTEST_COMMIT_WIDTH];
   atomic_event_t    atomic;
   l1tlb_event_t     itlb[DIFFTEST_ITLB_WIDTH];

@@ -91,7 +91,7 @@ INTERFACE_INSTR_COMMIT {
     packet->robidx   = robidx;
     packet->isLoad   = isLoad;
     packet->isStore  = isStore;
-    // printf("[DUT] inst commit pc: %016lx, inst: %016lx, skip: %d, isRVC: %d, fused: %d, rfwen: %d, fpwen: %d, wpdest: %d, wdest: %d, sqidx: %d, lqidx: %d, robidx: %d, isLoad: %d, isStore: %d\n", packet->pc, packet->inst, packet->skip, packet->isRVC, packet->fused, packet->rfwen, packet->fpwen, packet->wpdest, packet->wdest, packet->sqidx, packet->lqidx, packet->robidx, packet->isLoad, packet->isStore);
+    printf("[DUT] inst commit pc: %016lx, inst: %016lx, skip: %d, isRVC: %d, fused: %d, rfwen: %d, fpwen: %d, wpdest: %d, wdest: %d, sqidx: %d, lqidx: %d, robidx: %d, isLoad: %d, isStore: %d\n", packet->pc, packet->inst, packet->skip, packet->isRVC, packet->fused, packet->rfwen, packet->fpwen, packet->wpdest, packet->wdest, packet->sqidx, packet->lqidx, packet->robidx, packet->isLoad, packet->isStore);
   }
 }
 
@@ -293,7 +293,7 @@ INTERFACE_SBUFFER_EVENT {
     packet->mask = sbufferMask;
     for (int i = 0; i < 64; i++) {
       if( (sbufferMask >> i) & 1 ) {
-        Event event(EventType::StoreGlobal, coreid, sbufferAddr+i, packet->data[i], cycleCnt);
+        Event event(EventType::StoreGlobal, coreid, sbufferAddr+i, packet->data[i], 0, cycleCnt);
         put_event_in_buf(event);
       }
     }
@@ -317,7 +317,7 @@ INTERFACE_STORE_EVENT {
     for (int i = offset; i < 8; i++) {
       if((storeMask >> i) & 1) {
         uint8_t data = (storeData >> (i * 8)) & 0xffU;
-        Event event(EventType::StoreLocal, coreid, storeAddr + i, data, cycleCnt);
+        Event event(EventType::StoreLocal, coreid, storeAddr + i, data, 0, cycleCnt);
         put_event_in_buf(event);
       }
     } 
@@ -333,8 +333,6 @@ INTERFACE_X_EVENT {
     packet->data = storeData;
     packet->mask = storeMask;
     // TODO:add self define func at here
-    // Event event(EventType::StoreCommit, coreid, storeAddr, storeData, cycleCnt);
-    // put_event_in_buf(event);
   }
 }
 
@@ -344,7 +342,7 @@ INTERFACE_LOADLOCAL_EVENT {
     // printf("laodMask len %d loadlocaldata: %016lx\n", loadMask, loadData);
     for (int i = 0; i < loadMask; i++) {
       uint8_t data = (loadData >> (i * 8)) & 0xFF;
-      Event event(EventType::LoadLocal, coreid, paddr+i, data, cycleCnt);
+      Event event(EventType::LoadLocal, coreid, paddr+i, data, x, cycleCnt);
       put_event_in_buf(event);
     }
   }
@@ -358,6 +356,7 @@ INTERFACE_LOAD_EVENT {
     packet->paddr = paddr;
     packet->opType = opType;
     packet->fuType = fuType;
+    packet->x = x;
     packet->cycleCnt = cycleCnt;
   }
 }
@@ -420,12 +419,8 @@ INTERFACE_REFILL_EVENT {
     // printf("cacheid: %d\n", cacheid);
     for (int i = 0; i < 64; i++) {
         uint8_t data = (packet->data[i/8]) >> (i % 8) & 0xFF;
-        // TODO: fix cycleCnt
-        Event event(EventType::LoadGlobal, coreid, addr + i, data, 0);
+        Event event(EventType::LoadGlobal, coreid, addr + i, data, 0, cycleCnt);
         put_event_in_buf(event);
-        // // TODO: repalce with real loadlocal data
-        // event.ty = EventType::LoadLocal;
-        // put_event_in_buf(event);
     }
   }
 }

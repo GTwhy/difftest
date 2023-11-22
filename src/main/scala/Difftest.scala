@@ -152,6 +152,7 @@ class DifftestLoadLocalEventIO extends DifftestBundle with DifftestWithIndex {
   val paddr  = Input(UInt(64.W))
   val loadData   = Input(UInt(64.W))
   val loadMask   = Input(UInt(8.W))
+  val x  = Input(UInt(64.W))
   val cycleCnt = Input(UInt(64.W))
 }
 
@@ -167,6 +168,7 @@ class DiffLoadEventIO extends DifftestBundle with DifftestWithIndex {
   val paddr  = Input(UInt(64.W))
   val opType = Input(UInt(8.W))
   val fuType = Input(UInt(8.W))
+  val x  = Input(UInt(64.W))
   val cycleCnt = Input(UInt(64.W))
 }
 
@@ -202,6 +204,7 @@ class DiffRefillEventIO extends DifftestBundle {
   val addr  = Input(UInt(64.W))
   val data  = Input(Vec(8, UInt(64.W)))
   val cacheid = Input(UInt(8.W))
+  val cycleCnt = Input(UInt(64.W))
 }
 
 class DiffLrScEventIO extends DifftestBundle {

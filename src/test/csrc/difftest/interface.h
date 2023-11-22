@@ -360,6 +360,7 @@ extern "C" int v_difftest_step();
     DPIC_ARG_LONG paddr,             \
     DPIC_ARG_LONG loadData,             \
     DPIC_ARG_BYTE loadMask,             \
+    DPIC_ARG_LONG x,             \
     DPIC_ARG_LONG cycleCnt               \
   )
 
@@ -372,6 +373,7 @@ extern "C" int v_difftest_step();
     DPIC_ARG_LONG paddr,                 \
     DPIC_ARG_BYTE opType,                \
     DPIC_ARG_BYTE fuType,                \
+    DPIC_ARG_LONG x,                 \
     DPIC_ARG_LONG cycleCnt               \
   )
 
@@ -427,7 +429,8 @@ extern "C" int v_difftest_step();
     DPIC_ARG_LONG data_5,                \
     DPIC_ARG_LONG data_6,                \
     DPIC_ARG_LONG data_7,                \
-    DPIC_ARG_BYTE cacheid                \
+    DPIC_ARG_BYTE cacheid,                \
+    DPIC_ARG_LONG cycleCnt               \
   )
 
 // v_difftest_RefillEvent

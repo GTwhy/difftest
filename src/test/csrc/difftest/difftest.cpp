@@ -109,7 +109,9 @@ void make_ldst_events(int core_id){
           printf("Unknown fuOpType: 0x%x\n", mem_event->opType);
       }
 
-      uint64_t data = difftest[core_id]->get_commit_data(i);
+      auto df = difftest[core_id];
+
+      uint64_t data = df->get_commit_data(i);
       // switch (opType) {
       //   case 0: data = (int64_t)(int8_t)data; break;
       //   case 1: data = (int64_t)(int16_t)data; break;
@@ -131,11 +133,12 @@ void make_ldst_events(int core_id){
       // store
       if (mem_event->fuType == 0xD) {
         ty = EventType::StoreCommit;
+        auto sqidx = df->get_instr_commit(i)->sqidx;
+        data = df->get_x_event(sqidx)->data;
       }
-
       for (int j = 0; j < len; j++) {
         uint8_t data_byte = (data >> (j * 8)) & 0xFF;
-        Event event(ty, core_id, mem_event->paddr + j, data_byte, mem_event->cycleCnt);
+        Event event(ty, core_id, mem_event->paddr + j, data_byte, mem_event->x, mem_event->cycleCnt);
         put_event_in_buf(event);
       }
     }
