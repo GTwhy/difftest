@@ -416,9 +416,12 @@ INTERFACE_REFILL_EVENT {
     packet->data[5] = data_5;
     packet->data[6] = data_6;
     packet->data[7] = data_7;
-    // printf("cacheid: %d\n", cacheid);
+    
+    addr = addr - addr % 64;
     for (int i = 0; i < 64; i++) {
-        uint8_t data = (packet->data[i/8]) >> (i % 8) & 0xFF;
+        uint8_t data = (packet->data[i/8] >> ((i % 8) * 8)) & 0xFF;
+        // if (i % 8 == 0) printf("addr: 0x%016lx data : 0x%016lx\n", addr+i, packet->data[i/8]);
+        // printf("addr: 0x%016lx data: 0x%02x\n", addr+i, data);
         Event event(EventType::LoadGlobal, coreid, addr + i, data, 0, cycleCnt);
         put_event_in_buf(event);
     }

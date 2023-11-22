@@ -496,6 +496,10 @@ int Difftest::do_refill_check(int cacheid) {
   const char* name = cacheid == PAGECACHEID ? "PageCache" : cacheid == DCACHEID ? "DCache" : "ICache";
   dut_refill.addr = dut_refill.addr - dut_refill.addr % 64;
   if (dut_refill.valid == 1 && dut_refill.addr != last_valid_addr) {
+    // printf("ttt name: %s\n", name);
+    // printf("ttt last_valid_addr: 0x%016lx\n", last_valid_addr);
+    // printf("ttt dut_refill.addr: 0x%016lx\n", dut_refill.addr);
+    // printf("ttt in_pmem(dut_refill.addr): %d\n", in_pmem(dut_refill.addr));
     last_valid_addr = dut_refill.addr;
     if(!in_pmem(dut_refill.addr)){
       // speculated illegal mem access should be ignored
@@ -503,6 +507,7 @@ int Difftest::do_refill_check(int cacheid) {
     }
     for (int i = 0; i < 8; i++) {
       read_goldenmem(dut_refill.addr + i*8, &buf, 8);
+      // printf("ttt addr: 0x%016lx  golddata: 0x%016lx  dutdata: 0x%016lx\n", dut_refill.addr + i*8, *((uint64_t*)buf), dut_refill.data[i]);
       if (dut_refill.data[i] != *((uint64_t*)buf)) {
         printf("%s Refill test failed!\n",name);
         printf("addr: %lx\nGold: ", dut_refill.addr);
