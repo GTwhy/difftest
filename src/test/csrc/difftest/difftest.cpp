@@ -71,7 +71,9 @@ int difftest_state() {
 
 void make_ldst_events(int core_id){
   for (int i = 0; i < DIFFTEST_COMMIT_WIDTH; i++) {
-    load_event_t *mem_event = difftest[core_id]->get_load_event(i);
+    auto df = difftest[core_id];
+    load_event_t *mem_event = df->get_load_event(i);
+
     if (mem_event->valid == 0) {
       continue;
     }
@@ -108,8 +110,6 @@ void make_ldst_events(int core_id){
         default:
           printf("Unknown fuOpType: 0x%x\n", mem_event->opType);
       }
-
-      auto df = difftest[core_id];
 
       uint64_t data = df->get_commit_data(i);
       // switch (opType) {

@@ -38,7 +38,7 @@ int send_event_to_fifo() {
             printf("write fifo failed %d\n", res);
             return res;
         };
-        std::cout << "[DUT] " << event << std::endl;
+        // std::cout << "[DUT] " << event << std::endl;
         event_buf.pop();
     }
     return 0;
