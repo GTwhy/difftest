@@ -337,6 +337,7 @@ extern "C" int v_difftest_step();
     DPIC_ARG_LONG storeAddr,             \
     DPIC_ARG_LONG storeData,             \
     DPIC_ARG_BYTE storeMask,             \
+    DPIC_ARG_LONG x,             \
     DPIC_ARG_LONG cycleCnt               \
   )
 
@@ -386,7 +387,8 @@ extern "C" int v_difftest_step();
     DPIC_ARG_LONG data,            \
     DPIC_ARG_BYTE mask,            \
     DPIC_ARG_BYTE fuop,            \
-    DPIC_ARG_LONG out              \
+    DPIC_ARG_LONG out,              \
+    DPIC_ARG_LONG cycleCnt               \
   )
 
 // v_difftest_l1tlbEvent
@@ -438,7 +440,8 @@ extern "C" int v_difftest_step();
   DIFFTEST_DPIC_FUNC_DECL(LrScEvent) (   \
     DPIC_ARG_BYTE coreid,                \
     DPIC_ARG_BIT  valid,                 \
-    DPIC_ARG_BIT  success                \
+    DPIC_ARG_BIT  success,                \
+    DPIC_ARG_LONG cycleCnt               \
   )
 
 // v_difftest_RunaheadEvent

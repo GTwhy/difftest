@@ -75,9 +75,9 @@ inline std::ostream& operator<<(std::ostream& os, const Event& event) {
        << " }";
     return os;
 }
-int init_fifo();
-void put_event_in_buf(Event event);
-int send_event_to_fifo();
-int close_fifo(const char* fifo_path, int fifoHandle);
+void mcm_checker_init();
+void mcm_event_push(Event &event);
+void mcm_check();
+void mcm_checker_destroy();
 
 #endif // __TOOLS_H__

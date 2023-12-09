@@ -144,6 +144,7 @@ class DiffStoreEventIO extends DifftestBundle with DifftestWithIndex {
   val storeAddr   = Input(UInt(64.W))
   val storeData   = Input(UInt(64.W))
   val storeMask   = Input(UInt(8.W))
+  val x           = Input(UInt(64.W))
   val cycleCnt    = Input(UInt(64.W))
 }
 
@@ -179,6 +180,7 @@ class DiffAtomicEventIO extends DifftestBundle {
   val atomicMask = Input(UInt(8.W))
   val atomicFuop = Input(UInt(8.W))
   val atomicOut  = Input(UInt(64.W))
+  val cycleCnt = Input(UInt(64.W))
 }
 
 class DiffL1TLBEventIO extends DifftestBundle with DifftestWithIndex {
@@ -210,6 +212,7 @@ class DiffRefillEventIO extends DifftestBundle {
 class DiffLrScEventIO extends DifftestBundle {
   val valid   = Input(Bool())
   val success = Input(Bool())
+  val cycleCnt = Input(UInt(64.W))
 }
 
 class DiffRunaheadEventIO extends DifftestBundle with DifftestWithIndex {

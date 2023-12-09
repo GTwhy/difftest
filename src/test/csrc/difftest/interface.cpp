@@ -91,7 +91,7 @@ INTERFACE_INSTR_COMMIT {
     packet->robidx   = robidx;
     packet->isLoad   = isLoad;
     packet->isStore  = isStore;
-    printf("[DUT] inst commit pc: %016lx, inst: %016lx, skip: %d, isRVC: %d, fused: %d, rfwen: %d, fpwen: %d, wpdest: %d, wdest: %d, sqidx: %d, lqidx: %d, robidx: %d, isLoad: %d, isStore: %d\n", packet->pc, packet->inst, packet->skip, packet->isRVC, packet->fused, packet->rfwen, packet->fpwen, packet->wpdest, packet->wdest, packet->sqidx, packet->lqidx, packet->robidx, packet->isLoad, packet->isStore);
+    // printf("[DUT] inst commit pc: %016lx, inst: %016lx, skip: %d, isRVC: %d, fused: %d, rfwen: %d, fpwen: %d, wpdest: %d, wdest: %d, sqidx: %d, lqidx: %d, robidx: %d, isLoad: %d, isStore: %d\n", packet->pc, packet->inst, packet->skip, packet->isRVC, packet->fused, packet->rfwen, packet->fpwen, packet->wpdest, packet->wdest, packet->sqidx, packet->lqidx, packet->robidx, packet->isLoad, packet->isStore);
   }
 }
 
@@ -294,7 +294,7 @@ INTERFACE_SBUFFER_EVENT {
     for (int i = 0; i < 64; i++) {
       if( (sbufferMask >> i) & 1 ) {
         Event event(EventType::StoreGlobal, coreid, sbufferAddr+i, packet->data[i], 0, cycleCnt);
-        put_event_in_buf(event);
+        mcm_event_push(event);
       }
     }
   }
@@ -308,6 +308,7 @@ INTERFACE_STORE_EVENT {
     packet->addr = storeAddr;
     packet->data = storeData;
     packet->mask = storeMask;
+    packet->x = x;
     packet->cycleCnt = cycleCnt;
     
     // get byte one by one and send to fifo
@@ -317,8 +318,8 @@ INTERFACE_STORE_EVENT {
     for (int i = offset; i < 8; i++) {
       if((storeMask >> i) & 1) {
         uint8_t data = (storeData >> (i * 8)) & 0xffU;
-        Event event(EventType::StoreLocal, coreid, storeAddr + i, data, 0, cycleCnt);
-        put_event_in_buf(event);
+        Event event(EventType::StoreLocal, coreid, storeAddr + i, data, x, cycleCnt);
+        mcm_event_push(event);
       }
     } 
   }
@@ -343,7 +344,7 @@ INTERFACE_LOADLOCAL_EVENT {
     for (int i = 0; i < loadMask; i++) {
       uint8_t data = (loadData >> (i * 8)) & 0xFF;
       Event event(EventType::LoadLocal, coreid, paddr+i, data, x, cycleCnt);
-      put_event_in_buf(event);
+      mcm_event_push(event);
     }
   }
 }
@@ -371,8 +372,8 @@ INTERFACE_ATOMIC_EVENT {
     packet->mask = mask;
     packet->fuop = fuop;
     packet->out  = out;
-    // TODO: deal with amo
-    printf("amo addr: %lx data: %lx mask: %hhx fuop: %hhx out: %lx\n", addr, data, mask, fuop, out);
+    packet->cycleCnt = cycleCnt;
+    // printf("amo addr: %lx data: %lx mask: %hhx fuop: %hhx out: %lx\n", addr, data, mask, fuop, out);
   }
 }
 
@@ -423,7 +424,7 @@ INTERFACE_REFILL_EVENT {
         // if (i % 8 == 0) printf("addr: 0x%016lx data : 0x%016lx\n", addr+i, packet->data[i/8]);
         // printf("addr: 0x%016lx data: 0x%02x\n", addr+i, data);
         Event event(EventType::LoadGlobal, coreid, addr + i, data, 0, cycleCnt);
-        put_event_in_buf(event);
+        mcm_event_push(event);
     }
   }
 }
@@ -434,8 +435,8 @@ INTERFACE_LR_SC_EVENT {
   if (!packet->valid && valid) {
     packet->valid = valid;
     packet->success = success;
-    // TODO: deal with lrsc
-    printf("lrsc: %d\n", success);
+    packet->cycleCnt = cycleCnt;
+    // printf("lrsc: %d\n", success);
   }
 }
 

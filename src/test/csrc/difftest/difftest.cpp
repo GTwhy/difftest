@@ -21,6 +21,7 @@
 #include "spikedasm.h"
 #include "ref.h"
 #include "tools.h"
+#include <vector>
 
 static const char *reg_name[DIFFTEST_NR_REG+1] = {
   "$0",  "ra",  "sp",   "gp",   "tp",  "t0",  "t1",   "t2",
@@ -49,7 +50,7 @@ int difftest_init() {
   for (int i = 0; i < NUM_CORES; i++) {
     difftest[i] = new Difftest(i);
   }
-  init_fifo();
+  mcm_checker_init();
   return 0;
 }
 
@@ -139,21 +140,142 @@ void make_ldst_events(int core_id){
       for (int j = 0; j < len; j++) {
         uint8_t data_byte = (data >> (j * 8)) & 0xFF;
         Event event(ty, core_id, mem_event->paddr + j, data_byte, mem_event->x, mem_event->cycleCnt);
-        put_event_in_buf(event);
+        mcm_event_push(event);
       }
     }
   }
 }
 
+void make_atomic_events(int coreid) {
+  auto df = difftest[coreid];
+  auto atomic_event = df->get_atomic_event();
+  auto lrsc = df->get_lr_sc_event();
+  if (atomic_event->resp) {
+
+    uint64_t addr = atomic_event->addr & 0xfffffffffffffff8;
+    uint8_t mask = atomic_event->mask;
+    uint64_t data = atomic_event->data;
+    uint8_t fuop = atomic_event->fuop;
+    uint64_t out = atomic_event->out;
+    uint64_t cycleCnt = atomic_event->cycleCnt;
+    // printf("atomic event: addr: %016lx, mask: %x, data: %016lx, fuop: %x, out: %016lx, time: %ld  \n", addr, mask, data, fuop, out, cycleCnt);
+
+    // atomics
+    // bit(1, 0) are size
+    // since atomics use a different fu type
+    // so we can safely reuse other load/store's encodings
+    // bit encoding: | optype(4bit) | size (2bit) |
+    // def lr_w      = "b000010".U  // 0x02
+    // def sc_w      = "b000110".U  // 0x06
+    // def amoswap_w = "b001010".U  // 0x0A
+    // def amoadd_w  = "b001110".U  // 0x0E
+    // def amoxor_w  = "b010010".U  // 0x12
+    // def amoand_w  = "b010110".U  // 0x16
+    // def amoor_w   = "b011010".U  // 0x1A
+    // def amomin_w  = "b011110".U  // 0x1E
+    // def amomax_w  = "b100010".U  // 0x22
+    // def amominu_w = "b100110".U  // 0x26
+    // def amomaxu_w = "b101010".U  // 0x2A
+
+    // def lr_d      = "b000011".U  // 0x03
+    // def sc_d      = "b000111".U  // 0x07
+    // def amoswap_d = "b001011".U  // 0x0B
+    // def amoadd_d  = "b001111".U  // 0x0F
+    // def amoxor_d  = "b010011".U  // 0x13
+    // def amoand_d  = "b010111".U  // 0x17
+    // def amoor_d   = "b011011".U  // 0x1B
+    // def amomin_d  = "b011111".U  // 0x1F
+    // def amomax_d  = "b100011".U  // 0x23
+    // def amominu_d = "b100111".U  // 0x27
+    // def amomaxu_d = "b101011".U  // 0x2B
+
+    if (!(mask == 0xf || mask == 0xf0 || mask == 0xff)) {
+      printf("atomic mask error: %x\n", mask);
+      exit(-1);
+    }
+
+    EventType ty = EventType::StoreGlobal;
+    uint64_t ret;
+    
+
+    if (mask == 0xff) {
+      switch (fuop) {
+        case 0x02: case 0x03: ret = out; ty = EventType::LoadCommit; break;
+        // if sc fails(aka atomicOut == 1), no update to goldenmem
+        case 0x06: case 0x07: if (out == 1) return; ret = data; break;
+        case 0x0A: case 0x0B: ret = data; break;
+        case 0x0E: case 0x0F: ret = out + data; break;
+        case 0x12: case 0x13: ret = out ^ data; break;
+        case 0x16: case 0x17: ret = out & data; break;
+        case 0x1A: case 0x1B: ret = out | data; break;
+        case 0x1E: case 0x1F: ret = ((int64_t)out < (int64_t)data) ? out : data; break;
+        case 0x22: case 0x23: ret = ((int64_t)out > (int64_t)data) ? out : data; break;
+        case 0x26: case 0x27: ret = (out < data) ? out : data; break;
+        case 0x2A: case 0x2B: ret = (out > data) ? out : data; break;
+    
+        default: printf("Unknown atomic fuOpType: 0x%x\n", fuop);
+      }
+    }
+
+    if (mask == 0xf || mask == 0xf0) {
+      uint32_t rs = (uint32_t)data;  // rs2
+      uint32_t t  = (uint32_t)out;   // original value
+
+      switch (fuop) {
+        case 0x02: case 0x03: ret = t; ty = EventType::LoadCommit; break;
+        // if sc fails(aka atomicOut == 1), no update to goldenmem
+        case 0x06: case 0x07: if (t == 1) return; ret = rs; break;
+        case 0x0A: case 0x0B: ret = rs; break;
+        case 0x0E: case 0x0F: ret = t + rs; break;
+        case 0x12: case 0x13: ret = t ^ rs; break;
+        case 0x16: case 0x17: ret = t & rs; break;
+        case 0x1A: case 0x1B: ret = t | rs; break;
+        case 0x1E: case 0x1F: ret = ((int32_t)t < (int32_t)rs) ? t : rs; break;
+        case 0x22: case 0x23: ret = ((int32_t)t > (int32_t)rs) ? t : rs; break;
+        case 0x26: case 0x27: ret = (t < rs) ? t : rs; break;
+        case 0x2A: case 0x2B: ret = (t > rs) ? t : rs; break;
+        default: printf("Unknown atomic fuOpType: 0x%x\n", fuop);
+      }
+      if (mask == 0xf0) {
+        ret = (ret << 32);
+      }
+    }
+
+    for (int i = 0; i < 8; i++) {
+      if (mask & (1 << i)) {
+        
+        if (ty == EventType::StoreGlobal) {
+          Event event(EventType::StoreCommit, coreid, addr + i, (ret >> (i * 8)) & 0xFF, 1<<17, cycleCnt);
+          mcm_event_push(event);
+          event.ty = EventType::StoreLocal;
+          mcm_event_push(event);
+        } else {
+          Event event(EventType::LoadLocal, coreid, addr + i, (ret >> (i * 8)) & 0xFF, 1<<17, cycleCnt);
+          mcm_event_push(event);
+        }
+
+        Event event(ty, coreid, addr + i, (ret >> (i * 8)) & 0xFF, 1<<17, cycleCnt);
+        mcm_event_push(event);
+
+      }
+    }
+  }
+}
+
+void make_mcm_events(int coreid){
+  make_ldst_events(coreid);
+  make_atomic_events(coreid);
+}
+
 int difftest_step() {
   for (int i = 0; i < NUM_CORES; i++) {
-    make_ldst_events(i);
+    make_mcm_events(i);
     int ret = difftest[i]->step();
     if (ret) {
       return ret;
     }
   }
-  send_event_to_fifo();
+    mcm_check();
   return 0;
 }
 
@@ -423,7 +545,7 @@ void Difftest::do_instr_commit(int i) {
           }
         } else {
 #ifdef DEBUG_SMP
-          // goldenmem check failed as well, raise error
+          // goldenmem check failed as well, raise 
           printf("---  SMP difftest mismatch!\n");
           printf("---  Trying to probe local data of another core\n");
           uint64_t buf;
@@ -496,10 +618,6 @@ int Difftest::do_refill_check(int cacheid) {
   const char* name = cacheid == PAGECACHEID ? "PageCache" : cacheid == DCACHEID ? "DCache" : "ICache";
   dut_refill.addr = dut_refill.addr - dut_refill.addr % 64;
   if (dut_refill.valid == 1 && dut_refill.addr != last_valid_addr) {
-    // printf("ttt name: %s\n", name);
-    // printf("ttt last_valid_addr: 0x%016lx\n", last_valid_addr);
-    // printf("ttt dut_refill.addr: 0x%016lx\n", dut_refill.addr);
-    // printf("ttt in_pmem(dut_refill.addr): %d\n", in_pmem(dut_refill.addr));
     last_valid_addr = dut_refill.addr;
     if(!in_pmem(dut_refill.addr)){
       // speculated illegal mem access should be ignored
@@ -507,7 +625,6 @@ int Difftest::do_refill_check(int cacheid) {
     }
     for (int i = 0; i < 8; i++) {
       read_goldenmem(dut_refill.addr + i*8, &buf, 8);
-      // printf("ttt addr: 0x%016lx  golddata: 0x%016lx  dutdata: 0x%016lx\n", dut_refill.addr + i*8, *((uint64_t*)buf), dut_refill.data[i]);
       if (dut_refill.data[i] != *((uint64_t*)buf)) {
         printf("%s Refill test failed!\n",name);
         printf("addr: %lx\nGold: ", dut_refill.addr);

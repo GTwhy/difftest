@@ -137,6 +137,7 @@ typedef struct {
   uint64_t addr;
   uint64_t data;
   uint8_t  mask;
+  uint64_t x;
   uint64_t cycleCnt;
 } store_event_t;
 
@@ -163,6 +164,7 @@ typedef struct {
   uint8_t  mask;
   uint8_t  fuop;
   uint64_t out;
+  uint64_t cycleCnt;
 } atomic_event_t;
 
 typedef struct {
@@ -191,6 +193,7 @@ typedef struct {
 typedef struct {
   uint8_t valid = 0;
   uint8_t success;
+  uint64_t cycleCnt;
 } lr_sc_evevnt_t;
 
 typedef struct {
