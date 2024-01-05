@@ -238,6 +238,7 @@ void make_atomic_events(int coreid) {
       }
       if (mask == 0xf0) {
         ret = (ret << 32);
+        out = (out << 32);
       }
     }
 
@@ -245,7 +246,16 @@ void make_atomic_events(int coreid) {
       if (mask & (1 << i)) {
         
         if (ty == EventType::StoreGlobal) {
-          Event event(EventType::StoreCommit, coreid, addr + i, (ret >> (i * 8)) & 0xFF, 1<<17, cycleCnt);
+          
+          // sc is not a read-modify-write instruction so we don't need to push load events.
+          if (fuop != 6 && fuop != 7) {
+            Event event = Event(EventType::LoadLocal, coreid, addr + i, (out >> (i * 8)) & 0xFF, 1<<17, cycleCnt);
+            mcm_event_push(event);
+            event.ty = EventType::LoadCommit;
+            mcm_event_push(event);
+          }
+
+          Event event = Event(EventType::StoreCommit, coreid, addr + i, (ret >> (i * 8)) & 0xFF, 1<<17, cycleCnt);
           mcm_event_push(event);
           event.ty = EventType::StoreLocal;
           mcm_event_push(event);
@@ -270,12 +280,12 @@ void make_mcm_events(int coreid){
 int difftest_step() {
   for (int i = 0; i < NUM_CORES; i++) {
     make_mcm_events(i);
+    mcm_check();
     int ret = difftest[i]->step();
     if (ret) {
       return ret;
     }
   }
-    mcm_check();
   return 0;
 }
 
@@ -625,6 +635,7 @@ int Difftest::do_refill_check(int cacheid) {
     }
     for (int i = 0; i < 8; i++) {
       read_goldenmem(dut_refill.addr + i*8, &buf, 8);
+      // printf("Refill: addr: 0x%016lx, data: 0x%016lx\n",dut_refill.addr + i*8, dut_refill.data[i]);
       if (dut_refill.data[i] != *((uint64_t*)buf)) {
         printf("%s Refill test failed!\n",name);
         printf("addr: %lx\nGold: ", dut_refill.addr);
