@@ -32,10 +32,10 @@ checker_check_t checker_check;
 // string_free_t string_free;
 
 void mcm_checker_lib_init() {
-    std::string mcm_home = std::string(getenv("MCM_HOME"));
-    std::string lib_path = mcm_home + "/target/debug/libmcm_checker.so";
+    std::string lib_path = std::string(getenv("MCM_LIB_PATH"));
+    
     void* handle = dlmopen(LM_ID_NEWLM, lib_path.c_str(), RTLD_LAZY | RTLD_DEEPBIND);
-    // void* handle = dlopen("/home/why/zspace/cpu/xiangshan/xs-env/mcm-checker/target/debug/libmcm_checker.so", RTLD_LAZY | RTLD_DEEPBIND);
+    // void* handle = dlopen("/home/why/zspace/cpu/xiangshan/xs-env/mcm-checker/target/release/libmcm_checker.so", RTLD_LAZY | RTLD_DEEPBIND);
 
 
     if (!handle) {
