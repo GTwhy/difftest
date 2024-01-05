@@ -20,6 +20,7 @@ enum class EventType {
     LoadGlobal,
     LoadLocal,
     LoadCommit,
+    Fence,
 };
 
 inline EventType defaultEventType() {
@@ -59,6 +60,7 @@ inline std::ostream& operator<<(std::ostream& os, const EventType& eventType) {
         case EventType::LoadGlobal: os << "LoadGlobal"; break;
         case EventType::LoadLocal: os << "LoadLocal"; break;
         case EventType::LoadCommit: os << "LoadCommit"; break;
+        case EventType::Fence: os << "Fence"; break;
         default: os << "Unknown EventType";
     }
     return os;
