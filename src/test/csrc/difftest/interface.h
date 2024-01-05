@@ -355,14 +355,14 @@ extern "C" int v_difftest_step();
 // v_difftest_LoadLocalEvent
 #define INTERFACE_LOADLOCAL_EVENT            \
   DIFFTEST_DPIC_FUNC_DECL(LoadLocalEvent) (  \
-    DPIC_ARG_BYTE coreid,                \
-    DPIC_ARG_BYTE index,                 \
-    DPIC_ARG_BIT  valid,                 \
-    DPIC_ARG_LONG paddr,             \
-    DPIC_ARG_LONG loadData,             \
-    DPIC_ARG_BYTE loadMask,             \
-    DPIC_ARG_LONG x,             \
-    DPIC_ARG_LONG cycleCnt               \
+    DPIC_ARG_BYTE coreid,                    \
+    DPIC_ARG_BYTE index,                     \
+    DPIC_ARG_BIT  valid,                     \
+    DPIC_ARG_LONG paddr,                     \
+    DPIC_ARG_LONG loadData,                  \
+    DPIC_ARG_BYTE loadMask,                  \
+    DPIC_ARG_LONG x,                         \
+    DPIC_ARG_LONG cycleCnt                   \
   )
 
 // v_difftest_LoadEvent
