@@ -70,6 +70,11 @@ int difftest_state() {
   return -1;
 }
 
+void printInstrCommit(const instr_commit_t& instr) {
+  printf("valid: %d, pc: %lx, inst: %x, skip: %d, isRVC: %d, fused: %d, rfwen: %d, fpwen: %d, pdst0: %u, dst0: %d, lqidx: %d, sqidx: %d, robidx: %u, isLoad: %d, isStore: %d, lsrc0: %u, lsrc1: %u, lsrc2: %u, psrc0: %u, psrc1: %u, psrc2: %u, cycleCnt: %lu\n",
+         instr.valid, instr.pc, instr.inst, instr.skip, instr.isRVC, instr.fused, instr.rfwen, instr.fpwen, instr.wpdest, instr.wdest, instr.lqidx, instr.sqidx, instr.robidx, instr.isLoad, instr.isStore, instr.lsrc0, instr.lsrc1, instr.lsrc2, instr.psrc0, instr.psrc1, instr.psrc2, instr.cycleCnt);
+}
+
 void make_ldst_events(int core_id){
   for (int i = 0; i < DIFFTEST_COMMIT_WIDTH; i++) {
     auto df = difftest[core_id];
@@ -97,8 +102,27 @@ void make_ldst_events(int core_id){
     // def sw       = "b0010".U
     // def sd       = "b0011".U
 
+    // analyze dependency
+    const instr_commit_t *instr = df->get_instr_commit(i);
+    uint64_t dependency_addr = 0;
+    uint64_t dependency_x = 0;
+    dependency_x |= instr->robidx & ROB_IDX_MUSK;
+    dependency_addr |= (uint64_t)(instr->psrc0 & REG_MUSK) << (uint64_t)RegOffset::Psrc0;
+    dependency_addr |= (uint64_t)(instr->psrc1 & REG_MUSK) << (uint64_t)RegOffset::Psrc1;
+    dependency_addr |= (uint64_t)(instr->psrc2 & REG_MUSK) << (uint64_t)RegOffset::Psrc2;
+    dependency_addr |= (uint64_t)(instr->lsrc0 & REG_MUSK) << (uint64_t)RegOffset::Lsrc0;
+    dependency_addr |= (uint64_t)(instr->lsrc1 & REG_MUSK) << (uint64_t)RegOffset::Lsrc1;
+    dependency_addr |= (uint64_t)(instr->lsrc2 & REG_MUSK) << (uint64_t)RegOffset::Lsrc2;
+    dependency_addr |= (uint64_t)(instr->wdest & REG_MUSK) << (uint64_t)RegOffset::Ldst0;
+    dependency_addr |= (uint64_t)(instr->wpdest & REG_MUSK) << (uint64_t)RegOffset::Pdst0;
+    dependency_x |= (uint64_t)instr->inst << 32;
+
+    // printInstrCommit(*instr);
+
     // load or Store
     if (mem_event->fuType == 0xC || mem_event->fuType == 0xD) {
+      dependency_x |= mem_event->x;
+
       int len = 0;
       switch (mem_event->opType) {
         case 0: len = 1; break;
@@ -128,11 +152,13 @@ void make_ldst_events(int core_id){
 
       // load
       if (mem_event->fuType == 0xC) {
+        dependency_x |= 1ULL << (uint64_t)XOffset::IsLoad;
         ty = EventType::LoadCommit;
       }
 
       // store
       if (mem_event->fuType == 0xD) {
+        dependency_x |= 1ULL << (uint64_t)XOffset::IsStore;
         ty = EventType::StoreCommit;
         auto sqidx = df->get_instr_commit(i)->sqidx;
         data = df->get_x_event(sqidx)->data;
@@ -143,6 +169,9 @@ void make_ldst_events(int core_id){
         mcm_event_push(event);
       }
     }
+    
+    Event event(EventType::Dependency, core_id, dependency_addr, 0, dependency_x, instr->cycleCnt);
+    mcm_event_push(event);
   }
 }
 
@@ -176,7 +205,6 @@ void make_atomic_events(int coreid) {
     // def amomax_w  = "b100010".U  // 0x22
     // def amominu_w = "b100110".U  // 0x26
     // def amomaxu_w = "b101010".U  // 0x2A
-
     // def lr_d      = "b000011".U  // 0x03
     // def sc_d      = "b000111".U  // 0x07
     // def amoswap_d = "b001011".U  // 0x0B
@@ -242,6 +270,8 @@ void make_atomic_events(int coreid) {
       }
     }
 
+    uint64_t LRSC_FLAG = 1ULL << (uint64_t)XOffset::IsLrSc;
+
     for (int i = 0; i < 8; i++) {
       if (mask & (1 << i)) {
         
@@ -249,22 +279,22 @@ void make_atomic_events(int coreid) {
           
           // sc is not a read-modify-write instruction so we don't need to push load events.
           if (fuop != 6 && fuop != 7) {
-            Event event = Event(EventType::LoadLocal, coreid, addr + i, (out >> (i * 8)) & 0xFF, 1<<17, cycleCnt);
+            Event event = Event(EventType::LoadLocal, coreid, addr + i, (out >> (i * 8)) & 0xFF, LRSC_FLAG, cycleCnt);
             mcm_event_push(event);
             event.ty = EventType::LoadCommit;
             mcm_event_push(event);
           }
 
-          Event event = Event(EventType::StoreCommit, coreid, addr + i, (ret >> (i * 8)) & 0xFF, 1<<17, cycleCnt);
+          Event event = Event(EventType::StoreCommit, coreid, addr + i, (ret >> (i * 8)) & 0xFF, LRSC_FLAG, cycleCnt);
           mcm_event_push(event);
           event.ty = EventType::StoreLocal;
           mcm_event_push(event);
         } else {
-          Event event(EventType::LoadLocal, coreid, addr + i, (ret >> (i * 8)) & 0xFF, 1<<17, cycleCnt);
+          Event event(EventType::LoadLocal, coreid, addr + i, (ret >> (i * 8)) & 0xFF, LRSC_FLAG, cycleCnt);
           mcm_event_push(event);
         }
 
-        Event event(ty, coreid, addr + i, (ret >> (i * 8)) & 0xFF, 1<<17, cycleCnt);
+        Event event(ty, coreid, addr + i, (ret >> (i * 8)) & 0xFF, LRSC_FLAG, cycleCnt);
         mcm_event_push(event);
 
       }

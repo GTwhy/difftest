@@ -91,6 +91,13 @@ INTERFACE_INSTR_COMMIT {
     packet->robidx   = robidx;
     packet->isLoad   = isLoad;
     packet->isStore  = isStore;
+    packet->psrc0    = psrc0;
+    packet->psrc1    = psrc1;
+    packet->psrc2    = psrc2;
+    packet->lsrc0    = lsrc0;
+    packet->lsrc1    = lsrc1;
+    packet->lsrc2    = lsrc2;
+    packet->cycleCnt = cycleCnt;
     // printf("[DUT] inst commit pc: %016lx, inst: %016lx, skip: %d, isRVC: %d, fused: %d, rfwen: %d, fpwen: %d, wpdest: %d, wdest: %d, sqidx: %d, lqidx: %d, robidx: %d, isLoad: %d, isStore: %d\n", packet->pc, packet->inst, packet->skip, packet->isRVC, packet->fused, packet->rfwen, packet->fpwen, packet->wpdest, packet->wdest, packet->sqidx, packet->lqidx, packet->robidx, packet->isLoad, packet->isStore);
   }
 }

@@ -99,6 +99,12 @@ extern "C" int v_difftest_step();
     DPIC_ARG_BYTE sqidx,                 \
     DPIC_ARG_BIT  isLoad,                \
     DPIC_ARG_BIT  isStore,               \
+    DPIC_ARG_BYTE  psrc0,                \
+    DPIC_ARG_BYTE  psrc1,                \
+    DPIC_ARG_BYTE  psrc2,                \
+    DPIC_ARG_BYTE  lsrc0,                \
+    DPIC_ARG_BYTE  lsrc1,                \
+    DPIC_ARG_BYTE  lsrc2,                \
     DPIC_ARG_LONG cycleCnt               \
   )
 

@@ -80,6 +80,12 @@ typedef struct {
   uint16_t robidx;
   uint8_t  isLoad;
   uint8_t  isStore;
+  uint8_t lsrc0;
+  uint8_t lsrc1;
+  uint8_t lsrc2;
+  uint8_t psrc0;
+  uint8_t psrc1;
+  uint8_t psrc2;
   uint64_t cycleCnt = 0;
 } instr_commit_t;
 

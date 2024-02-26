@@ -12,6 +12,31 @@
 
 extern int fifo_handle;
 
+// Constants
+constexpr uint64_t ROB_IDX_MUSK = 0xffff;
+constexpr uint64_t REG_MUSK = 0xff;
+
+// Enum class for RegOffset
+enum class RegOffset {
+    Lsrc0 = 0,
+    Lsrc1 = 8,
+    Lsrc2 = 16,
+    Psrc0 = 24,
+    Psrc1 = 32,
+    Psrc2 = 40,
+    Ldst0 = 48,
+    Pdst0 = 56
+};
+
+// Enum class for XOffset
+enum class XOffset {
+    IsMMIO = 16,
+    IsLrSc = 17,
+    IsStore = 18,
+    IsLoad = 19
+};
+
+
 enum class EventType {
     Invalid, // Default
     StoreCommit,
@@ -21,6 +46,7 @@ enum class EventType {
     LoadLocal,
     LoadCommit,
     Fence,
+    Dependency,
 };
 
 inline EventType defaultEventType() {
@@ -61,6 +87,7 @@ inline std::ostream& operator<<(std::ostream& os, const EventType& eventType) {
         case EventType::LoadLocal: os << "LoadLocal"; break;
         case EventType::LoadCommit: os << "LoadCommit"; break;
         case EventType::Fence: os << "Fence"; break;
+        case EventType::Dependency: os << "Dependency"; break;
         default: os << "Unknown EventType";
     }
     return os;

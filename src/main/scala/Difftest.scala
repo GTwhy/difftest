@@ -67,6 +67,12 @@ class DiffInstrCommitIO extends DiffBasicInstrCommitIO {
   val sqIdx    = Input(UInt(7.W))
   val isLoad   = Input(Bool())
   val isStore  = Input(Bool())
+  val psrc0    = Input(UInt(8.W))
+  val psrc1    = Input(UInt(8.W))
+  val psrc2    = Input(UInt(8.W))
+  val lsrc0    = Input(UInt(8.W))
+  val lsrc1    = Input(UInt(8.W))
+  val lsrc2    = Input(UInt(8.W))
   val cycleCnt = Input(UInt(64.W))
 }
 
