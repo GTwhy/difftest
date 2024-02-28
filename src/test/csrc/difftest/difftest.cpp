@@ -311,18 +311,24 @@ void make_fence_events(int coreid) {
       continue;
     }
 
+    // reuse fence event to synchronize robidx with mcm checker
+    uint64_t IsBidIdx_Flag = 1ULL << (uint64_t)XOffset::IsRobIdx;
+    Event event(EventType::Fence, coreid, 0, 0, mem_event->x | IsBidIdx_Flag, mem_event->cycleCnt);
+    mcm_event_push(event);
+
     // def fence        = "b0011".U // 0x3
     if (mem_event->fuType == 0x3) {
-      Event event(EventType::Fence, coreid, 0, 0, 0, mem_event->cycleCnt);
+      Event event(EventType::Fence, coreid, 0, 0, mem_event->x, mem_event->cycleCnt);
       mcm_event_push(event);
     }
+
   }
 }
 
 void make_mcm_events(int coreid){
-  make_fence_events(coreid);
   make_ldst_events(coreid);
   make_atomic_events(coreid);
+  make_fence_events(coreid);
 }
 
 int difftest_step() {

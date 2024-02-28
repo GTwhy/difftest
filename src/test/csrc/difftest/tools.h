@@ -33,7 +33,8 @@ enum class XOffset {
     IsMMIO = 16,
     IsLrSc = 17,
     IsStore = 18,
-    IsLoad = 19
+    IsLoad = 19,
+    IsRobIdx = 20
 };
 
 
