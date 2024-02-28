@@ -178,7 +178,6 @@ void make_ldst_events(int core_id){
 void make_atomic_events(int coreid) {
   auto df = difftest[coreid];
   auto atomic_event = df->get_atomic_event();
-  auto lrsc = df->get_lr_sc_event();
   if (atomic_event->resp) {
 
     uint64_t addr = atomic_event->addr & 0xfffffffffffffff8;
@@ -270,7 +269,7 @@ void make_atomic_events(int coreid) {
       }
     }
 
-    uint64_t LRSC_FLAG = 1ULL << (uint64_t)XOffset::IsLrSc;
+    uint64_t ATOMIC_FLAG = 1ULL << (uint64_t)XOffset::IsAtomic;
 
     for (int i = 0; i < 8; i++) {
       if (mask & (1 << i)) {
@@ -279,22 +278,22 @@ void make_atomic_events(int coreid) {
           
           // sc is not a read-modify-write instruction so we don't need to push load events.
           if (fuop != 6 && fuop != 7) {
-            Event event = Event(EventType::LoadLocal, coreid, addr + i, (out >> (i * 8)) & 0xFF, LRSC_FLAG, cycleCnt);
+            Event event = Event(EventType::LoadLocal, coreid, addr + i, (out >> (i * 8)) & 0xFF, ATOMIC_FLAG, cycleCnt);
             mcm_event_push(event);
             event.ty = EventType::LoadCommit;
             mcm_event_push(event);
           }
 
-          Event event = Event(EventType::StoreCommit, coreid, addr + i, (ret >> (i * 8)) & 0xFF, LRSC_FLAG, cycleCnt);
+          Event event = Event(EventType::StoreCommit, coreid, addr + i, (ret >> (i * 8)) & 0xFF, ATOMIC_FLAG, cycleCnt);
           mcm_event_push(event);
           event.ty = EventType::StoreLocal;
           mcm_event_push(event);
         } else {
-          Event event(EventType::LoadLocal, coreid, addr + i, (ret >> (i * 8)) & 0xFF, LRSC_FLAG, cycleCnt);
+          Event event(EventType::LoadLocal, coreid, addr + i, (ret >> (i * 8)) & 0xFF, ATOMIC_FLAG, cycleCnt);
           mcm_event_push(event);
         }
 
-        Event event(ty, coreid, addr + i, (ret >> (i * 8)) & 0xFF, LRSC_FLAG, cycleCnt);
+        Event event(ty, coreid, addr + i, (ret >> (i * 8)) & 0xFF, ATOMIC_FLAG, cycleCnt);
         mcm_event_push(event);
 
       }

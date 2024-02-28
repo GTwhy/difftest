@@ -31,7 +31,7 @@ enum class RegOffset {
 // Enum class for XOffset
 enum class XOffset {
     IsMMIO = 16,
-    IsLrSc = 17,
+    IsAtomic = 17,
     IsStore = 18,
     IsLoad = 19,
     IsRobIdx = 20
