@@ -394,6 +394,7 @@ extern "C" int v_difftest_step();
     DPIC_ARG_BYTE mask,            \
     DPIC_ARG_BYTE fuop,            \
     DPIC_ARG_LONG out,              \
+    DPIC_ARG_LONG x,            \
     DPIC_ARG_LONG cycleCnt               \
   )
 

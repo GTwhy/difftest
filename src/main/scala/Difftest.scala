@@ -186,6 +186,7 @@ class DiffAtomicEventIO extends DifftestBundle {
   val atomicMask = Input(UInt(8.W))
   val atomicFuop = Input(UInt(8.W))
   val atomicOut  = Input(UInt(64.W))
+  val x          = Input(UInt(64.W))
   val cycleCnt = Input(UInt(64.W))
 }
 

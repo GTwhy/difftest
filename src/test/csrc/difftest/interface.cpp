@@ -379,8 +379,9 @@ INTERFACE_ATOMIC_EVENT {
     packet->mask = mask;
     packet->fuop = fuop;
     packet->out  = out;
+    packet->x    = x;
     packet->cycleCnt = cycleCnt;
-    // printf("amo addr: %lx data: %lx mask: %hhx fuop: %hhx out: %lx\n", addr, data, mask, fuop, out);
+    // printf("amo addr: %lx data: %lx mask: %hhx fuop: %hhx out: %lx x: %lx\n", addr, data, mask, fuop, out, x);
   }
 }
 

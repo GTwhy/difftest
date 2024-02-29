@@ -179,6 +179,7 @@ void make_atomic_events(int coreid) {
   auto df = difftest[coreid];
   auto atomic_event = df->get_atomic_event();
   if (atomic_event->resp) {
+    uint64_t ATOMIC_FLAG = 1ULL << (uint64_t)XOffset::IsAtomic;
 
     uint64_t addr = atomic_event->addr & 0xfffffffffffffff8;
     uint8_t mask = atomic_event->mask;
@@ -186,6 +187,7 @@ void make_atomic_events(int coreid) {
     uint8_t fuop = atomic_event->fuop;
     uint64_t out = atomic_event->out;
     uint64_t cycleCnt = atomic_event->cycleCnt;
+    uint64_t x = atomic_event->x | ATOMIC_FLAG;
     // printf("atomic event: addr: %016lx, mask: %x, data: %016lx, fuop: %x, out: %016lx, time: %ld  \n", addr, mask, data, fuop, out, cycleCnt);
 
     // atomics
@@ -269,31 +271,34 @@ void make_atomic_events(int coreid) {
       }
     }
 
-    uint64_t ATOMIC_FLAG = 1ULL << (uint64_t)XOffset::IsAtomic;
-
     for (int i = 0; i < 8; i++) {
+      // only keep aqrl bits in the first event, order check just need one time for an amo
+      if (i > 0) {
+        x &= ~((1ULL << (uint64_t)XOffset::IsAQ) | (1ULL << (uint64_t)XOffset::IsRL));
+      }
+      
       if (mask & (1 << i)) {
         
         if (ty == EventType::StoreGlobal) {
           
           // sc is not a read-modify-write instruction so we don't need to push load events.
           if (fuop != 6 && fuop != 7) {
-            Event event = Event(EventType::LoadLocal, coreid, addr + i, (out >> (i * 8)) & 0xFF, ATOMIC_FLAG, cycleCnt);
+            Event event = Event(EventType::LoadLocal, coreid, addr + i, (out >> (i * 8)) & 0xFF, x, cycleCnt);
             mcm_event_push(event);
             event.ty = EventType::LoadCommit;
             mcm_event_push(event);
           }
 
-          Event event = Event(EventType::StoreCommit, coreid, addr + i, (ret >> (i * 8)) & 0xFF, ATOMIC_FLAG, cycleCnt);
+          Event event = Event(EventType::StoreCommit, coreid, addr + i, (ret >> (i * 8)) & 0xFF, x, cycleCnt);
           mcm_event_push(event);
           event.ty = EventType::StoreLocal;
           mcm_event_push(event);
         } else {
-          Event event(EventType::LoadLocal, coreid, addr + i, (ret >> (i * 8)) & 0xFF, ATOMIC_FLAG, cycleCnt);
+          Event event(EventType::LoadLocal, coreid, addr + i, (ret >> (i * 8)) & 0xFF, x, cycleCnt);
           mcm_event_push(event);
         }
 
-        Event event(ty, coreid, addr + i, (ret >> (i * 8)) & 0xFF, ATOMIC_FLAG, cycleCnt);
+        Event event(ty, coreid, addr + i, (ret >> (i * 8)) & 0xFF, x, cycleCnt);
         mcm_event_push(event);
 
       }

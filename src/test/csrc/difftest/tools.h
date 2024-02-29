@@ -34,7 +34,9 @@ enum class XOffset {
     IsAtomic = 17,
     IsStore = 18,
     IsLoad = 19,
-    IsRobIdx = 20
+    IsRobIdx = 20,
+    IsRL = 21,
+    IsAQ = 22
 };
 
 

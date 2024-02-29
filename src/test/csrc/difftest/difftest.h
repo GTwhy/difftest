@@ -170,6 +170,7 @@ typedef struct {
   uint8_t  mask;
   uint8_t  fuop;
   uint64_t out;
+  uint64_t x;
   uint64_t cycleCnt;
 } atomic_event_t;
 
