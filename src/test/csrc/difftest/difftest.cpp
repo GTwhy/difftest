@@ -23,6 +23,8 @@
 #include "tools.h"
 #include <vector>
 
+extern bool mcm_lib_flag;
+
 static const char *reg_name[DIFFTEST_NR_REG+1] = {
   "$0",  "ra",  "sp",   "gp",   "tp",  "t0",  "t1",   "t2",
   "s0",  "s1",  "a0",   "a1",   "a2",  "a3",  "a4",   "a5",
@@ -306,39 +308,18 @@ void make_atomic_events(int coreid) {
   }
 }
 
-void make_fence_events(int coreid) {
-  auto df = difftest[coreid];
-  for (int i = 0; i < DIFFTEST_COMMIT_WIDTH; i++) {
-    load_event_t *mem_event = df->get_load_event(i);
-
-    if (mem_event->valid == 0) {
-      continue;
-    }
-
-    // reuse fence event to synchronize robidx with mcm checker
-    uint64_t IsBidIdx_Flag = 1ULL << (uint64_t)XOffset::IsRobIdx;
-    Event event(EventType::Fence, coreid, 0, 0, mem_event->x | IsBidIdx_Flag, mem_event->cycleCnt);
-    mcm_event_push(event);
-
-    // def fence        = "b0011".U // 0x3
-    if (mem_event->fuType == 0x3) {
-      Event event(EventType::Fence, coreid, 0, 0, mem_event->x, mem_event->cycleCnt);
-      mcm_event_push(event);
-    }
-
-  }
-}
 
 void make_mcm_events(int coreid){
   make_ldst_events(coreid);
   make_atomic_events(coreid);
-  make_fence_events(coreid);
 }
 
 int difftest_step() {
   for (int i = 0; i < NUM_CORES; i++) {
-    make_mcm_events(i);
-    mcm_check();
+    if (mcm_lib_flag) {
+      make_mcm_events(i);
+      mcm_check();
+    }
     int ret = difftest[i]->step();
     if (ret) {
       return ret;
